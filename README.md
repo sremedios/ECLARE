@@ -2,6 +2,8 @@
 ECLARE is a self super-resolution method; no outside training data is required.
 The only required input is the image itself and the output directory.
 
+The journal manuscript is currently in preparation; the link will be provided soon!
+
 NOTE: ECLARE was developed on top of refactors and improvements to [SMORE](https://gitlab.com/iacl/smore.git) and as such the SASHIMI 2023 paper points to that URL. However the code and developers are the same.
 
 ## Installation from Source
@@ -27,7 +29,12 @@ where each argument in `[]` is optional and may be omitted. Remember with Singul
 If this work is useful to you or your project, please consider citing us!
 
 ```
-Remedios, S.W., Han, S., Zuo, L., Carass, A., Pham, D.L., Prince, J.L. and Dewey, B.E., 2023, October. Self-supervised super-resolution for anisotropic MR images with and without slice gap. In International Workshop on Simulation and Synthesis in Medical Imaging (pp. 118-128). Cham: Springer Nature Switzerland.
+Remedios, S.W., Han, S., Zuo, L., Carass, A., Pham, D.L., 
+Prince, J.L. and Dewey, B.E., 2023, October. Self-supervised 
+super-resolution for anisotropic MR images with and without 
+slice gap. In International Workshop on Simulation and 
+Synthesis in Medical Imaging (pp. 118-128). Cham: Springer 
+Nature Switzerland.
 ```
 
 ```
