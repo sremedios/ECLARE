@@ -25,11 +25,21 @@ This installs the `eclare` package and creates two CLI aliases `eclare-train` an
  
 ### Basic Usage
 
-There are two basic ways to run this code: from source after running `pip install .` or from the Singularity container.
+Run the following command:
+
+```run-eclare --in-fpath ${INPUT_FPATH} --out-dir ${OUTPUT_DIR} --gpu-id ${GPU_ID}```
+
+This will produce a file ending in `{YOUR_INPUT_FILENAME}_eclare.nii.gz` in `OUTPUT_DIR` and will use the GPU you specify.
+
+We also support additional arguments:
 
 ```run-eclare --in-fpath ${INPUT_FPATH} --out-dir ${OUTPUT_DIR} [--slice-thickness ${SLICE_THICKNESS}] [--blur-kernel-file ${BLUR_KERNEL_FILE}] [--gpu-id ${GPU_ID}] [--suffix ${SUFFIX}]```
 
-where each argument in `[]` is optional and may be omitted. Remember with Singularity that you need to bind the right drives with `-B ${DRIVE_ROOT}` where `${DRIVE_ROOT}` is where your data sits. The default GPU ID is `0`. The container will automatically handle whether the slice thickness or blur kernel file is present, or neither case. The `--suffix` argument allows you to specify the suffix of the output filename before the file extension. Default is `_eclare`.
+where each argument in `[]` is optional and may be omitted:
+- If you know your data has slice gap, you can specify the thickness in mm.
+- The default GPU ID is `0`. 
+- You can change the suffix to be `-SR` to produce `[...]-SR.nii.gz`, etc., based on your needs. You specify the delimiter.
+- If you know the form of your slice selection profile as a `.npy` array, you can also specify it with `--blur-kernel-file`. 
 
 ## Citations
 If this work is useful to you or your project, please consider citing us!
