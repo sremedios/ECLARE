@@ -5,7 +5,7 @@ __package_name__ = "eclare"
 # noinspection PyTypeChecker
 setup(
     name=__package_name__,
-    version=1.0.0,
+    version="1.0.0",
     description="ECLARE: Efficient cross-planar learning for anisotropic resolution enhancement",
     long_description="ECLARE: Efficient cross-planar learning for anisotropic resolution enhancement",
     author="Samuel W. Remedios",
