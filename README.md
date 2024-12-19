@@ -9,6 +9,12 @@ NOTE: ECLARE was developed on top of refactors and improvements to [SMORE](https
 ## Installation from Source
 
 ### Install using `pip`
+We recommend starting from a fresh Python 3.10 installation. If you use Anaconda or Miniconda, you can do:
+
+```conda create -n eclare python=3.10```
+
+Although this code may work on version of Python >3.10, it has not been tested so results may vary on such software versions. 
+
 Clone the [repository](https://github.com/sremedios/ECLARE) and navigate to the root project directory.
 Run:
 
