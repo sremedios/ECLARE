@@ -10,39 +10,6 @@ from math import ceil
 import numpy as np
 
 
-def apply_lpf(x, cutoff, kernel_size=25):
-    """
-    Windowed sinc at the cutoff when downsampling
-    """
-
-    # Create symmetric indices centered at zero
-    t = torch.arange(
-        -(kernel_size // 2), kernel_size // 2 + 1, dtype=torch.float32, device=x.device
-    )
-
-    # Sinc function (avoid division by zero)
-    sinc_filter = torch.where(
-        t == 0, 2 * cutoff, torch.sin(2 * np.pi * cutoff * t) / (np.pi * t)
-    )
-
-    # Apply a window function (Hann window for smoothness)
-    window = 0.5 * (
-        1
-        - torch.cos(
-            2 * np.pi * torch.arange(kernel_size, device=x.device) / (kernel_size - 1)
-        )
-    )
-    sinc_filter *= window
-
-    # Normalize to ensure unity gain at DC
-    sinc_filter /= sinc_filter.sum()
-    sinc_filter = sinc_filter.view(1, 1, -1, 1)
-
-    # Convolve and return
-    pad = kernel_size // 2
-    return F.conv2d(x, sinc_filter, padding=(pad, 0))
-
-
 def pixel_shuffle(x, scale):
     """https://gist.github.com/davidaknowles/6e95a643adaf3960d1648a6b369e9d0b"""
     num_batches, num_channels, nx, ny = x.shape
@@ -120,8 +87,6 @@ class WDSR(nn.Module):
         x = self.body(x)
         # Pixel shuffle to ceil(scale)
         x = self.tail(x)
-        # LPF before downsampling
-        x = apply_lpf(x, cutoff=ceil(self.scale) / self.scale / 2)
         # Interpolate down to target shape
         x = resize(x, (ceil(self.scale) / self.scale, 1), order=self.order)
 
