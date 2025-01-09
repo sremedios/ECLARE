@@ -28,6 +28,8 @@ from .utils.misc_utils import LossProgBar
 from .utils.patch_ops import calc_dims_to_crop, calc_dims_to_pad
 from .utils.rotate import rotate_vol_2d
 
+torch.backends.cudnn.benchmark = True
+
 
 def set_random_seed(seed):
     torch.manual_seed(seed)
@@ -43,9 +45,8 @@ def apply_to_vol(model, image, batch_size):
         en = st + batch_size
         batch = image[st:en]
         with torch.inference_mode():
-            with torch.cuda.amp.autocast():
-                sr, *_ = model(batch)
-                sr = sr.detach().cpu()
+            with torch.amp.autocast("cuda"):
+                sr = model(batch).detach().cpu()
         result.append(sr)
     result = torch.cat(result, dim=0)
     return result
@@ -67,40 +68,24 @@ def run_eclare(
     blur_kernel,
     dataset,
     device,
-    eclare_out_fpath,
+    batch_size,
     n_patches=None,
-    model_state=None,
-    save_intermediate=True,
 ):
 
     eclare_st = time.time()
 
-    learning_rate = 1e-3
+    learning_rate = 1e-4
 
     # model setup
     model = WDSR(
         n_resblocks=16,
-        num_channels=32,
+        num_channels=256,
         scale=slice_separation,
     ).to(device)
 
-    if model_state is not None:
-        model.load_state_dict(model_state)
-
-    K = 1
-    top_model_states = []
-
-    # Change params for ECLARE loading
-    batch_size = 32
-
-    # Find the patch size that works for training for this slice separation.
-    # We start at the network's receptive field, 38, and find the next valid number
-    p = 38
-    p = calc_dims_to_pad(p, slice_separation) + p
-
-    dataset.init_eclare(
-        model.calc_out_patch_size([p, p]), blur_kernel, slice_separation, n_patches
-    )
+    p = 8
+    p2 = round(slice_separation * max(model.calc_out_patch_size([p, p])))
+    dataset.init_eclare((p2, p), blur_kernel, slice_separation, n_patches)
 
     n_steps = int(ceil(dataset.n_patches / batch_size))
 
@@ -112,9 +97,8 @@ def run_eclare(
         cycle_momentum=True,
     )
     opt.step()  # necessary for the LR scheduler
-
-    scaler = torch.cuda.amp.GradScaler()
-    loss_obj = torch.nn.L1Loss().to(device)
+    scaler = torch.amp.GradScaler("cuda")
+    loss_obj = torch.nn.MSELoss().to(device)
 
     data_loader = DataLoader(
         dataset,
@@ -124,19 +108,21 @@ def run_eclare(
         num_workers=min(8, torch.get_num_threads()),
     )
 
-    # Train
+    # ===============================
+    # ============ TRAIN ============
+    # ===============================
     print(f"\n{text_div} Running ECLARE {text_div}")
     train_st = time.time()
 
     loss_names = ["loss"]
     pbar = LossProgBar(dataset.n_patches, batch_size, loss_names)
 
-    for t, (patches_lr, _, patches_hr) in enumerate(data_loader):
+    for t, (patches_lr, patches_hr) in enumerate(data_loader):
         patches_hr_device = patches_hr.to(device)
         patches_lr_device = patches_lr.to(device)
 
-        with torch.cuda.amp.autocast():
-            patches_hr_hat, _, _ = model(patches_lr_device)
+        with torch.amp.autocast("cuda"):
+            patches_hr_hat = model(patches_lr_device)
             loss = loss_obj(patches_hr_hat, patches_hr_device)
 
         # gradient updates
@@ -157,14 +143,6 @@ def run_eclare(
 
     # Uses variables instantiated way earlier
     image = lr_axis_to_z(image, lr_axis)
-
-    # pad the voxel dims out so we achieve the correct final resolution
-    ps = [calc_dims_to_pad(dim, slice_separation) for dim in image.shape]
-    # Only crop off the through-plane direction based on slice separation scaling
-    cs = [ps[0], ps[1], calc_dims_to_crop(ps[2], slice_separation)]
-    cs = tuple([slice(None, -c) if c != 0 else slice(None, None) for c in cs])
-
-    image = np.pad(image, ((0, ps[0]), (0, ps[1]), (0, ps[2])))
     image = torch.from_numpy(image)
 
     # ===== PREDICT =====
@@ -191,37 +169,10 @@ def run_eclare(
     final_out = final_out.detach().cpu().numpy().astype(np.float32)
     final_out = inv_normalize(final_out, orig_min, orig_max, a=0, b=1)
 
-    # Re-crop to target shape
-    final_out = final_out[cs]
     # Reorient to original orientation
     final_out = z_axis_to_lr_axis(final_out, lr_axis)
 
     print(f"{text_div} End prediction {text_div}")
-
-    if save_intermediate:
-        print("Saving image...")
-        # Update affine matrix
-        scales = scales[:-1]
-        scales.insert(lr_axis, 1 / slice_separation)
-        new_affine = update_affine(affine, scales)
-
-        # Write nifti
-        out_obj = nib.Nifti1Image(final_out, affine=new_affine, header=header)
-        nib.save(out_obj, eclare_out_fpath)
-        print("\tIntermediate result written to: {}\n".format(str(eclare_out_fpath)))
-
-        # Also save intermediate non-avgd results
-        for i, model_pred in enumerate(model_preds):
-            model_pred = model_pred.detach().cpu().numpy().astype(np.float32)
-            model_pred = inv_normalize(model_pred, orig_min, orig_max, a=0, b=1)
-
-            # Re-crop to target shape
-            model_pred = model_pred[cs]
-            # Reorient to original orientation
-            model_pred = z_axis_to_lr_axis(model_pred, lr_axis)
-            # Write nifti
-            out_obj = nib.Nifti1Image(model_pred, affine=new_affine, header=header)
-            nib.save(out_obj, str(eclare_out_fpath).replace(".nii", f"angle{i}.nii"))
 
     eclare_en = time.time()
 

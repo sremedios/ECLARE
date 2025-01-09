@@ -181,10 +181,7 @@ class TrainSet(Dataset):
         patch_lr = patch_lr.squeeze(0)
         patch_blur = patch_blur.squeeze(0)
 
-        # add a little noise to the LR image to prevent learning identity maps during ECLARE 
-        # patch_lr += np.random.uniform(patch_lr.mean() * 0.1, patch_lr.mean() * 0.75) + torch.randn(size=patch_lr.shape) * patch_lr.std() / 2
-
-        return patch_lr, patch_blur, patch_hr
+        return patch_lr, patch_hr
 
     def __getitem__(self, i):
         if self.algorithm == "ESPRESO":

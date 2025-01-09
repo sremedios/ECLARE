@@ -18,7 +18,7 @@ from .espreso import run_espreso
 # Utils folder
 from .utils.train_set import TrainSet
 from .utils.timer import timer_context
-from .utils.parse_image_file import parse_image, normalize
+from .utils.parse_image_file import parse_image
 from .utils.misc_utils import parse_device
 
 text_div = "=" * 10
@@ -33,15 +33,12 @@ def main(args=None):
     parser.add_argument("--in-fpath", type=str, required=True)
     parser.add_argument("--out-dir", type=str, required=True)
     parser.add_argument("--inplane-acq-res", type=float, nargs=2, default=None)
-    parser.add_argument("--n-taps-espreso", type=int, default=21)
-    parser.add_argument("--n-iters", type=int, default=1)
-    parser.add_argument("--n-patches", type=int, default=832000)
-    parser.add_argument("--n-subsequent-patches", type=int, default=83200)
+    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--n-patches", type=int, default=1000000)
     parser.add_argument("--patch-sampling", type=str, default="gradient")
     parser.add_argument("--suffix", type=str, default="_eclare")
     parser.add_argument("--gpu-id", type=int, default=-1)
     parser.add_argument("--verbose", action="store_true", default=False)
-    parser.add_argument("--save-intermediate", action="store_true", default=False)
 
     args = parser.parse_args(args if args is not None else sys.argv[1:])
 
@@ -63,66 +60,43 @@ def main(args=None):
             parse_image(in_fpath, normalize_image=True, inplane_acq_res=inplane_acq_res)
         )
 
-    # First iteration defaults
-    train_vol = image
-    model_state = None
-    n_patches = None
+    dataset = TrainSet(image=image, lr_axis=lr_axis, verbose=False)
 
-    for i in range(1, args.n_iters + 1):
+    # ========== ESPRESO ==========
+    g, espreso_elapsed_time = run_espreso(
+        slice_separation,
+        dataset,
+        device,
+        espreso_psf_fpath,
+        espreso_psf_plot_fpath,
+    )
 
-        dataset = TrainSet(image=train_vol, lr_axis=lr_axis, verbose=False)
+    blur_kernel = g().detach().cpu()
 
-        if i == 1:
-            # ========== ESPRESO ==========
-            g, espreso_elapsed_time = run_espreso(
-                slice_separation,
-                args.n_taps_espreso,
-                dataset,
-                device,
-                espreso_psf_fpath,
-                espreso_psf_plot_fpath,
-            )
+    # ========== ECLARE ==========
+    eclare_vol, model_state, eclare_elapsed_time = run_eclare(
+        image,
+        slice_separation,
+        scales,
+        lr_axis,
+        header,
+        affine,
+        orig_min,
+        orig_max,
+        blur_kernel,
+        dataset,
+        device,
+        batch_size=args.batch_size,
+        n_patches=args.n_patches,
+    )
 
-            blur_kernel = g().detach().cpu()
-
-        # ========== ECLARE ==========
-        if i > 1:
-            n_patches = args.n_subsequent_patches
-        else:
-            n_patches = args.n_patches
-
-        eclare_out_fpath_iter = Path(
-            str(eclare_out_fpath).replace(".nii", f"_iter{i}.nii")
+    # Print final timings and wrap-up.
+    print(
+        (
+            f"\tESPRESO elapsed time: {espreso_elapsed_time:.4f}s\n"
+            f"\tECLARE elapsed time: {eclare_elapsed_time:.4f}s\n"
         )
-
-        eclare_vol, model_state, eclare_elapsed_time = run_eclare(
-            image,
-            slice_separation,
-            scales,
-            lr_axis,
-            header,
-            affine,
-            orig_min,
-            orig_max,
-            blur_kernel,
-            dataset,
-            device,
-            eclare_out_fpath_iter,
-            n_patches=n_patches,
-            model_state=model_state,
-            save_intermediate=args.save_intermediate,
-        )
-
-        train_vol, *_ = normalize(eclare_vol)
-
-        # Print final timings and wrap-up.
-        print(
-            (
-                f"\nFinished iteration {i} / {args.n_iters}\n"
-                f"\tESPRESO elapsed time: {espreso_elapsed_time:.4f}s\n"
-                f"\tECLARE elapsed time: {eclare_elapsed_time:.4f}s\n"
-            )
-        )
+    )
 
     print("Saving image...")
     # Update affine matrix

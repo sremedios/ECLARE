@@ -40,7 +40,6 @@ text_div = "=" * 10
 
 def run_espreso(
     slice_separation,
-    n_taps_espreso,
     dataset,
     device,
     espreso_psf_fpath,
@@ -70,17 +69,17 @@ def run_espreso(
         dataset,
         batch_size=batch_size,
         shuffle=False,  # Dataset automatically shuffles
-        pin_memory=True,
+        pin_memory=False,
         num_workers=min(8, torch.get_num_threads()),
     )
 
     g = G().to(device)
     opt_g = torch.optim.AdamW(g.parameters(), lr=lr)
-    scaler_g = torch.cuda.amp.GradScaler()
+    scaler_g = torch.amp.GradScaler("cuda")
 
     # Warm up to RF-Pulse-SLR of the slice separation
-    ref_psf = torch.zeros(1, 1, n_taps_espreso, 1).to(device)
-    ref_psf[:, :, n_taps_espreso // 2, :] = 1
+    ref_psf = torch.zeros(1, 1, 21, 1).to(device)
+    ref_psf[:, :, 21 // 2, :] = 1
 
     loss_fn = torch.nn.MSELoss().to(device)
 
@@ -90,7 +89,7 @@ def run_espreso(
 
         opt_g.zero_grad()
 
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast("cuda"):
             est_psf = g()
 
             est = F.conv2d(x, est_psf)
@@ -111,7 +110,7 @@ def run_espreso(
 
     adv_loss_fn = GANLoss().to(device)
     peak_loss_fn = PeakLoss().to(device)
-    bound_loss_fn = BoundaryLoss(kernel_length=n_taps_espreso).to(device)
+    bound_loss_fn = BoundaryLoss(kernel_length=21).to(device)
 
     # now adversarial loss.
     # "real" means that the horizontal direction is from the through-plane axis
@@ -153,8 +152,8 @@ def run_espreso(
     opt_d.step()
 
     # set up scalers
-    scaler_g = torch.cuda.amp.GradScaler()
-    scaler_d = torch.cuda.amp.GradScaler()
+    scaler_g = torch.amp.GradScaler("cuda")
+    scaler_d = torch.amp.GradScaler("cuda")
 
     for x_batch in tqdm(data_loader):
 
@@ -167,7 +166,7 @@ def run_espreso(
 
         opt_g.zero_grad()
 
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast("cuda"):
 
             est_psf = g()
 
@@ -197,7 +196,7 @@ def run_espreso(
 
         opt_d.zero_grad()
 
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast("cuda"):
             # Measure discriminator's ability to classify real from generated samples
             if np.random.rand() < 0.5:
                 d_loss = adv_loss_fn(d(real_horiz.detach()), is_real=True)

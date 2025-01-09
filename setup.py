@@ -31,7 +31,7 @@ setup(
         "nibabel",
         "numpy",
         "scipy",
-        "torch>=2.1",
+        "torch>=2.5",
         "tqdm",
         "radifox-utils==1.0.3",
         "matplotlib",
