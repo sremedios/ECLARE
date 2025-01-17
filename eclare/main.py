@@ -20,6 +20,7 @@ from .utils.train_set import TrainSet
 from .utils.timer import timer_context
 from .utils.parse_image_file import parse_image
 from .utils.misc_utils import parse_device
+from .utils.blur_kernel_ops import parse_kernel
 
 text_div = "=" * 10
 
@@ -37,6 +38,9 @@ def main(args=None):
     parser.add_argument("--n-patches", type=int, default=1000000)
     parser.add_argument("--patch-sampling", type=str, default="gradient")
     parser.add_argument("--suffix", type=str, default="_eclare")
+    parser.add_argument("--relative-slice-thickness", type=float, default=None)
+    parser.add_argument("--relative-slice-profile-type", type=str, default="gaussian")
+    parser.add_argument("--relative-slice-profile-fpath", type=Path, default=None)
     parser.add_argument("--gpu-id", type=int, default=-1)
     parser.add_argument("--verbose", action="store_true", default=False)
 
@@ -51,8 +55,6 @@ def main(args=None):
 
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    espreso_psf_fpath = out_dir / f"{subj_id}_espreso_psf.npy"
-    espreso_psf_plot_fpath = out_dir / f"{subj_id}_espreso_psf_plot.png"
     eclare_out_fpath = out_dir / out_fname
 
     with timer_context("Parsing image file...", verbose=False):
@@ -63,15 +65,25 @@ def main(args=None):
     dataset = TrainSet(image=image, lr_axis=lr_axis, verbose=False)
 
     # ========== ESPRESO ==========
-    g, espreso_elapsed_time = run_espreso(
-        slice_separation,
-        dataset,
-        device,
-        espreso_psf_fpath,
-        espreso_psf_plot_fpath,
-    )
+    if args.relative_slice_thickness is None:
+        espreso_psf_fpath = out_dir / f"{subj_id}_espreso_psf.npy"
+        espreso_psf_plot_fpath = out_dir / f"{subj_id}_espreso_psf_plot.png"
 
-    blur_kernel = g().detach().cpu()
+        g, espreso_elapsed_time = run_espreso(
+            slice_separation,
+            dataset,
+            device,
+            espreso_psf_fpath,
+            espreso_psf_plot_fpath,
+        )
+
+        blur_kernel = g().detach().cpu()
+    else:
+        blur_kernel = parse_kernel(
+            args.relative_slice_profile_fpath,
+            args.relative_slice_profile_type,
+            args.relative_slice_thickness,
+        )
 
     # ========== ECLARE ==========
     eclare_vol, model_state, eclare_elapsed_time = run_eclare(
@@ -91,12 +103,9 @@ def main(args=None):
     )
 
     # Print final timings and wrap-up.
-    print(
-        (
-            f"\tESPRESO elapsed time: {espreso_elapsed_time:.4f}s\n"
-            f"\tECLARE elapsed time: {eclare_elapsed_time:.4f}s\n"
-        )
-    )
+    if args.relative_slice_thickness is None:
+        print(f"\tESPRESO elapsed time: {espreso_elapsed_time:.4f}s\n")
+    print(f"\tECLARE elapsed time: {eclare_elapsed_time:.4f}s\n")
 
     print("Saving image...")
     # Update affine matrix

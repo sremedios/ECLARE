@@ -30,7 +30,7 @@ setup(
     install_requires=[
         "nibabel",
         "numpy",
-        "scipy",
+        "scipy==1.11.4",
         "torch>=2.5",
         "tqdm",
         "radifox-utils==1.0.3",
