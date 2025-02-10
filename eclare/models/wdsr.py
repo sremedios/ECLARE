@@ -95,4 +95,7 @@ class WDSR(nn.Module):
 
         # Add the residual
         x = r + s
+
+        # Clip to the range [0, 1]
+        x = x.clip(0, 1)
         return x

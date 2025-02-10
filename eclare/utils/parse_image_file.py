@@ -58,7 +58,7 @@ def parse_image(image_file, normalize_image=False, inplane_acq_res=None):
         image = downsample_k_space(image, target_shape=downsample_shape).astype(np.float32)
         x, y = inplane_acq_res
 
-    slice_separation = round(float(z / min(x, y)), 1)
+    slice_separation = round(float(z / min(x, y)), 3)
 
     if normalize_image:
         image, orig_min, orig_max = normalize(image, 0, 1)
