@@ -6,26 +6,16 @@ The journal manuscript is currently in preparation; the link will be provided so
 
 NOTE: ECLARE was developed on top of refactors and improvements to [SMORE](https://gitlab.com/iacl/smore.git) and as such the SASHIMI 2023 paper points to that URL. However the code and developers are the same.
 
-## Installation from Source
-
-### Install using `pip`
+## Quick start
 We recommend starting from a fresh Python 3.10 installation. If you use Anaconda or Miniconda, you can do:
 
 ```conda create -n eclare python=3.10```
 
 Although this code may work on version of Python >3.10, it has not been tested so results may vary on such software versions. 
 
-Clone the [repository](https://github.com/sremedios/ECLARE) and navigate to the root project directory.
-Run:
+Run `pip install eclare`
 
- ```pip install .```
-
-Package requirements are automatically handled. To see a list of requirements, see `setup.py` L50-59.
-This installs the `eclare` package and creates two CLI aliases `eclare-train` and `eclare-test`.
- 
-### Basic Usage
-
-Run the following command:
+To super-resolve an input, run:
 
 ```run-eclare --in-fpath ${INPUT_FPATH} --out-dir ${OUTPUT_DIR} --gpu-id ${GPU_ID}```
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eclare"
-version = "1.0.0"
+version = "1.0.1"
 description = "ECLARE: Efficient cross-planar learning for anisotropic resolution enhancement"
 authors = [
   { name="Samuel W. Remedios", email="sam.remedios@gmail.com" }
