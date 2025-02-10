@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eclare"
+version = "1.0.0"
+description = "ECLARE: Efficient cross-planar learning for anisotropic resolution enhancement"
+authors = [
+  { name="Samuel W. Remedios", email="sam.remedios@gmail.com" }
+]
+license = { file = "LICENSE" }
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: OS Independent",
+]
+keywords = ["super-resolution", "anisotropic", "volumetric image"]
+requires-python = ">= 3.10"
+dependencies = [
+    "nibabel",
+    "numpy",
+    "scipy==1.11.4",
+    "torch>=2.5",
+    "tqdm",
+    "radifox-utils==1.0.3",
+    "matplotlib",
+]
+
+[project.scripts]
+run-eclare = "eclare.main:main"
+
+[project.urls]
+"Source" = "https://github.com/sremedios/ECLARE"
