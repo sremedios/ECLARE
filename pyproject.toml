@@ -26,6 +26,8 @@ dependencies = [
     "tqdm",
     "radifox-utils==1.0.3",
     "matplotlib",
+    "exceptiongroup", # seemingly necessary for some other package
+    "tomli", # seemingly necessary for some other package
 ]
 
 [project.scripts]
