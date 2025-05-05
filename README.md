@@ -23,13 +23,13 @@ This will produce a file ending in `{YOUR_INPUT_FILENAME}_eclare.nii.gz` in `OUT
 
 We also support additional arguments:
 
-```run-eclare --in-fpath ${INPUT_FPATH} --out-dir ${OUTPUT_DIR} [--slice-thickness ${SLICE_THICKNESS}] [--blur-kernel-file ${BLUR_KERNEL_FILE}] [--gpu-id ${GPU_ID}] [--suffix ${SUFFIX}]```
+```run-eclare --in-fpath ${INPUT_FPATH} --out-dir ${OUTPUT_DIR} [--relative-slice-thickness ${SLICE_THICKNESS}] [--relative-slice-profile-fpath ${BLUR_KERNEL_FILE}] [--gpu-id ${GPU_ID}] [--suffix ${SUFFIX}]```
 
-where each argument in `[]` is optional and may be omitted:
-- If you know your data has slice gap, you can specify the thickness in mm.
+where each argument in `[]` is optional and may be omitted.
+- If you have a good guess of your data's slice thickness, you can specify `--relative-slice-thickness` and provide a number relative to the in-plane. So if in-plane is, say, 0.125mm and you think through-plane is 0.25mm, then you would give `--relative-slice-thickness 2`. This models the relative slice profile as a Gaussian kernel, but slice separation is still read from the header. Therefore, setting this parameter indirectly specifies slice gap as well. 
 - The default GPU ID is `0`. 
 - You can change the suffix to be `-SR` to produce `[...]-SR.nii.gz`, etc., based on your needs. You specify the delimiter.
-- If you know the form of your slice selection profile as a `.npy` array, you can also specify it with `--blur-kernel-file`. 
+- If you know the form of your slice selection profile as a `.npy` array, you can also specify it with `--relative-slice-profile-fpath`. 
 
 ## Citations
 If this work is useful to you or your project, please consider citing us!
