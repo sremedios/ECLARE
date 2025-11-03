@@ -53,10 +53,11 @@ class Block(nn.Module):
 
 
 class WDSR(nn.Module):
-    def __init__(self, n_resblocks, num_channels, scale, order=3):
+    def __init__(self, n_resblocks, num_channels, scale, order=3, interp_wdsr=False):
         super().__init__()
         self.scale = scale
         self.order = order
+        self.interp_wdsr = interp_wdsr
 
         kernel_size = 3
         padding = (kernel_size - 1) // 2
@@ -68,7 +69,10 @@ class WDSR(nn.Module):
             *[Block(num_channels, act=act, res_scale=1) for _ in range(n_resblocks)]
         )
 
-        self.tail = Upsample(num_channels, ceil(self.scale), kernel_size)
+        if self.interp_wdsr:
+            self.tail = nn.Conv1d(num_channels, 1, kernel_size, padding=padding)
+        else:
+            self.tail = Upsample(num_channels, ceil(self.scale), kernel_size)
 
     def calc_out_patch_size(self, input_patch_size):
         x = torch.rand([1, 1] + input_patch_size).float()
@@ -85,10 +89,17 @@ class WDSR(nn.Module):
         # Process in LR space
         x = self.head(x)
         x = self.body(x)
-        # Pixel shuffle to ceil(scale)
-        x = self.tail(x)
-        # Interpolate down to target shape
-        x = resize(x, (ceil(self.scale) / self.scale, 1), order=self.order)
+
+        if self.interp_wdsr:
+            # Pixel shuffle to ceil(scale)
+            x = self.tail(x)
+            # Interpolate down to target shape
+            x = resize(x, (1 / self.scale, 1), order=self.order)
+        else:
+            # Pixel shuffle to ceil(scale)
+            x = self.tail(x)
+            # Interpolate down to target shape
+            x = resize(x, (ceil(self.scale) / self.scale, 1), order=self.order)
 
         # Track the residual
         r = x.clone()

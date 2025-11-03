@@ -17,7 +17,6 @@ from torch.utils.data import DataLoader
 from .models.wdsr import WDSR
 
 # Utils folder
-from .utils.train_set import TrainSet
 from .utils.timer import timer_context
 from .utils.parse_image_file import (
     lr_axis_to_z,
@@ -70,6 +69,8 @@ def run_eclare(
     device,
     batch_size,
     n_patches=None,
+    fov_aware_resampling=True,
+    interp_wdsr=False,
 ):
 
     eclare_st = time.time()
@@ -81,11 +82,12 @@ def run_eclare(
         n_resblocks=16,
         num_channels=256,
         scale=slice_separation,
+        interp_wdsr=interp_wdsr,
     ).to(device)
 
     p = 8
     p2 = round(slice_separation * max(model.calc_out_patch_size([p, p])))
-    dataset.init_eclare((p2, p), blur_kernel, slice_separation, n_patches)
+    dataset.init_eclare((p2, p), blur_kernel, slice_separation, n_patches, fov_aware_resampling)
 
     n_steps = int(ceil(dataset.n_patches / batch_size))
 

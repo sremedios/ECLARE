@@ -102,6 +102,7 @@ class TrainSet(Dataset):
         slice_separation,
         n_patches,
         patch_sampling="gradient",
+        fov_aware_resampling=True,
     ):
         self.algorithm = "ECLARE"
         self.patch_size = patch_size
@@ -109,6 +110,7 @@ class TrainSet(Dataset):
         self.slice_separation = slice_separation
         self.n_patches = n_patches
         self.patch_sampling = patch_sampling
+        self.fov_aware_resampling = fov_aware_resampling
 
         ext_patch_size, ext_patch_crop = calc_extended_patch_size(
             self.blur_kernel, self.patch_size
@@ -175,7 +177,10 @@ class TrainSet(Dataset):
         patch_blur = patch_blur[self.ext_patch_crop]
 
         # Downsample patch blur
-        patch_lr = resize(patch_blur, (self.slice_separation, 1), order=3)
+        if fov_aware_resamplig:
+            patch_lr = resize(patch_blur, (self.slice_separation, 1), order=3)
+        else:
+            patch_lr = torch.interpolate(patch_blur, scale_factor=(1/self.slice_separation, 1), mode='bicubic')
 
         patch_hr = patch_hr.squeeze(0)
         patch_lr = patch_lr.squeeze(0)
