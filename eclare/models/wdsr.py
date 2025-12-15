@@ -58,7 +58,6 @@ class WDSR(nn.Module):
         self.scale = scale
         self.order = order
         self.interp_wdsr = interp_wdsr
-        self.fov_aware_resampling = fov_aware_resampling
 
         if fov_aware_resampling:
             self.resize_1 = lambda x: resize(x, (1 / self.scale, 1), order=self.order)

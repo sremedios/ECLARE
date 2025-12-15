@@ -83,6 +83,7 @@ def run_eclare(
         num_channels=256,
         scale=slice_separation,
         interp_wdsr=interp_wdsr,
+        fov_aware_resampling=fov_aware_resampling,
     ).to(device)
 
     p = 8
