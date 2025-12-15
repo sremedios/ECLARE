@@ -180,7 +180,7 @@ class TrainSet(Dataset):
         if self.fov_aware_resampling:
             patch_lr = resize(patch_blur, (self.slice_separation, 1), order=3)
         else:
-            patch_lr = torch.interpolate(patch_blur, scale_factor=(1/self.slice_separation, 1), mode='bicubic')
+            patch_lr = F.interpolate(patch_blur, scale_factor=(1/self.slice_separation, 1), mode='bicubic')
 
         patch_hr = patch_hr.squeeze(0)
         patch_lr = patch_lr.squeeze(0)

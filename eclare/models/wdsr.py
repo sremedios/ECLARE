@@ -63,8 +63,8 @@ class WDSR(nn.Module):
             self.resize_1 = lambda x: resize(x, (1 / self.scale, 1), order=self.order)
             self.resize_2 = lambda x: resize(x, (ceil(self.scale) / self.scale, 1), order=self.order)
         else:
-            self.resize_1 = lambda x: torch.interpolate(x, scale_factor=(self.scale, 1))
-            self.resize_2 = lambda x: torch.interpolate(x, scale_factor=(self.scale / ceil(self.scale), 1))
+            self.resize_1 = lambda x: F.interpolate(x, scale_factor=(self.scale, 1))
+            self.resize_2 = lambda x: F.interpolate(x, scale_factor=(self.scale / ceil(self.scale), 1))
 
         kernel_size = 3
         padding = (kernel_size - 1) // 2
@@ -91,7 +91,7 @@ class WDSR(nn.Module):
 
     def forward(self, x):
         # Interpolate the input to create a skip
-        s = resize_1(x)
+        s = self.resize_1(x)
 
         # Process in LR space
         x = self.head(x)
@@ -101,12 +101,12 @@ class WDSR(nn.Module):
             # Pixel shuffle to ceil(scale)
             x = self.tail(x)
             # Interpolate down to target shape
-            x = resize_1(x)
+            x = self.resize_1(x)
         else:
             # Pixel shuffle to ceil(scale)
             x = self.tail(x)
             # Interpolate down to target shape
-            x = resize_2(x)
+            x = self.resize_2(x)
 
         # Track the residual
         r = x.clone()
