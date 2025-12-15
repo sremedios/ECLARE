@@ -38,7 +38,7 @@ def main(args=None):
     parser.add_argument("--n-patches", type=int, default=1000000)
     parser.add_argument("--patch-sampling", type=str, default="gradient")
     parser.add_argument("--suffix", type=str, default="_eclare")
-    parser.add_argument("--fov-aware-resampling", action="store_true", default=True)
+    parser.add_argument("--disable-fov-aware-resampling", action="store_true", default=False)
     parser.add_argument("--interp-wdsr", action="store_true", default=False)
     parser.add_argument("--relative-slice-thickness", type=float, default=None)
     parser.add_argument("--relative-slice-profile-type", type=str, default="gaussian")
@@ -47,6 +47,7 @@ def main(args=None):
     parser.add_argument("--verbose", action="store_true", default=False)
 
     args = parser.parse_args(args if args is not None else sys.argv[1:])
+    fov_aware_resampling = not args.disable_fov_aware_resampling
 
     device = parse_device(args.gpu_id)
     inplane_acq_res = args.inplane_acq_res
@@ -100,7 +101,7 @@ def main(args=None):
         blur_kernel,
         dataset,
         device,
-        fov_aware_resampling=args.fov_aware_resampling,
+        fov_aware_resampling=fov_aware_resampling,
         interp_wdsr=args.interp_wdsr,
         batch_size=args.batch_size,
         n_patches=args.n_patches,

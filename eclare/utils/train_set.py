@@ -177,7 +177,7 @@ class TrainSet(Dataset):
         patch_blur = patch_blur[self.ext_patch_crop]
 
         # Downsample patch blur
-        if fov_aware_resamplig:
+        if self.fov_aware_resampling:
             patch_lr = resize(patch_blur, (self.slice_separation, 1), order=3)
         else:
             patch_lr = torch.interpolate(patch_blur, scale_factor=(1/self.slice_separation, 1), mode='bicubic')

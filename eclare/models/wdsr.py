@@ -53,11 +53,19 @@ class Block(nn.Module):
 
 
 class WDSR(nn.Module):
-    def __init__(self, n_resblocks, num_channels, scale, order=3, interp_wdsr=False):
+    def __init__(self, n_resblocks, num_channels, scale, order=3, fov_aware_resampling=True, interp_wdsr=False):
         super().__init__()
         self.scale = scale
         self.order = order
         self.interp_wdsr = interp_wdsr
+        self.fov_aware_resampling = fov_aware_resampling
+
+        if fov_aware_resampling:
+            self.resize_1 = lambda x: resize(x, (1 / self.scale, 1), order=self.order)
+            self.resize_2 = lambda x: resize(x, (ceil(self.scale) / self.scale, 1), order=self.order)
+        else:
+            self.resize_1 = lambda x: torch.interpolate(x, scale_factor=(self.scale, 1))
+            self.resize_2 = lambda x: torch.interpolate(x, scale_factor=(self.scale / ceil(self.scale), 1))
 
         kernel_size = 3
         padding = (kernel_size - 1) // 2
@@ -70,7 +78,7 @@ class WDSR(nn.Module):
         )
 
         if self.interp_wdsr:
-            self.tail = nn.Conv1d(num_channels, 1, kernel_size, padding=padding)
+            self.tail = nn.Conv2d(num_channels, 1, kernel_size, padding=padding)
         else:
             self.tail = Upsample(num_channels, ceil(self.scale), kernel_size)
 
@@ -84,7 +92,7 @@ class WDSR(nn.Module):
 
     def forward(self, x):
         # Interpolate the input to create a skip
-        s = resize(x, (1 / self.scale, 1), order=self.order)
+        s = resize_1(x)
 
         # Process in LR space
         x = self.head(x)
@@ -94,12 +102,12 @@ class WDSR(nn.Module):
             # Pixel shuffle to ceil(scale)
             x = self.tail(x)
             # Interpolate down to target shape
-            x = resize(x, (1 / self.scale, 1), order=self.order)
+            x = resize_1(x)
         else:
             # Pixel shuffle to ceil(scale)
             x = self.tail(x)
             # Interpolate down to target shape
-            x = resize(x, (ceil(self.scale) / self.scale, 1), order=self.order)
+            x = resize_2(x)
 
         # Track the residual
         r = x.clone()
