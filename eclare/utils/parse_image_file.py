@@ -14,12 +14,23 @@ def normalize(x, a=-1, b=1):
     return a + numer / denom, orig_min, orig_max
 
 
-def inv_normalize(x, orig_min, orig_max, a=-1, b=1):
-    tmp = x - a
-    tmp = tmp * (orig_max - orig_min)
-    tmp = tmp / (b - a)
-    tmp += orig_min
-    return tmp
+def inv_normalize(x, orig_min, orig_max, a=0.0, b=1.0, out_dtype=None):
+    # x is expected to be float array in [a,b]
+    # In-place math to avoid out of mem errors:
+    x = np.asarray(x)
+
+    # x = (x - a) / (b - a)
+    x -= a
+    x /= (b - a)
+
+    # x = x * (orig_max - orig_min) + orig_min
+    x *= (orig_max - orig_min)
+    x += orig_min
+
+    if out_dtype is not None:
+        x = x.astype(out_dtype, copy=False)
+
+    return x
 
 
 def parse_image(image_file, normalize_image=False, inplane_acq_res=None):
