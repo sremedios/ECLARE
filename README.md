@@ -1,4 +1,4 @@
-# ECLARE: Efficient cross-planar learning for anisotropic resolution enhancement | [Paper](https://doi.org/10.1007/978-3-031-44689-4_12)
+# ECLARE: Efficient cross-planar learning for anisotropic resolution enhancement | [Paper](https://doi.org/10.1117/1.JMI.13.2.024001)
 ECLARE is a self super-resolution method; no outside training data is required.
 The only required input is the image itself and the output directory.
 
@@ -33,6 +33,21 @@ where each argument in `[]` is optional and may be omitted.
 
 ## Citations
 If this work is useful to you or your project, please consider citing us!
+
+
+```
+@article{remedios2026eclare,
+author = {Samuel W. Remedios and Shuwen Wei and Shuo Han and Jinwei Zhang and Aaron Carass and Kurt  G. Schilling and Dzung L. Pham and Jerry L. Prince and Blake E. Dewey},
+title = {{ECLARE: efficient cross-planar learning for anisotropic resolution enhancement}},
+volume = {13},
+journal = {Journal of Medical Imaging},
+number = {2},
+publisher = {SPIE},
+pages = {024001},
+year = {2026},
+doi = {10.1117/1.JMI.13.2.024001},
+}
+```
 
 ```
 Remedios, S.W., Han, S., Zuo, L., Carass, A., Pham, D.L., 
